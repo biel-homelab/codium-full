@@ -18,16 +18,29 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint Dockerfile (Hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-          config: .hadolint.yaml
+        # Local binary instead of hadolint/hadolint-action: the action builds
+        # a Docker image FROM ghcr.io/hadolint/hadolint, whose anonymous
+        # GHCR token exchange is denied from the self-hosted DinD runners,
+        # and the leftover GHCR job credentials in ~/.docker/config.json
+        # make BuildKit send a stale PAT that GHCR rejects. The runner
+        # image ships hadolint; fall back to the official release binary.
+        run: |
+          if ! command -v hadolint >/dev/null 2>&1; then
+            curl -fsSL -o /tmp/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+            sudo install -m 0755 /tmp/hadolint /usr/local/bin/hadolint || install -m 0755 /tmp/hadolint "$HOME/.local/bin/hadolint" || true
+            export PATH="$HOME/.local/bin:$PATH"
+          fi
+          hadolint --version
+          hadolint --config .hadolint.yaml Dockerfile
 
       - name: Lint Shell Scripts (ShellCheck)
         run: |
           shellcheck --version
           DISABLE_CODES=$(grep '^disable=' .shellcheckrc | cut -d= -f2)
-          shellcheck -e "${DISABLE_CODES}" -x scripts/*.sh rootfs/etc/profile.d/*.sh rootfs/usr/local/bin/npm rootfs/usr/local/bin/npx rootfs/usr/local/bin/yarn
+          # rootfs bin list: npm shim was removed in e810408 (native npm);
+          # keep only files that exist so shellcheck does not exit 2 on a
+          # missing path (pre-existing failure also on hosted runners).
+          shellcheck -e "${DISABLE_CODES}" -x scripts/*.sh rootfs/etc/profile.d/*.sh rootfs/usr/local/bin/npx rootfs/usr/local/bin/yarn
 
       - name: Lint GitHub Workflows (actionlint)
         run: |
