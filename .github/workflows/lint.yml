@@ -37,7 +37,10 @@ jobs:
         run: |
           shellcheck --version
           DISABLE_CODES=$(grep '^disable=' .shellcheckrc | cut -d= -f2)
-          shellcheck -e "${DISABLE_CODES}" -x scripts/*.sh rootfs/etc/profile.d/*.sh rootfs/usr/local/bin/npm rootfs/usr/local/bin/npx rootfs/usr/local/bin/yarn
+          # rootfs bin list: npm shim was removed in e810408 (native npm);
+          # keep only files that exist so shellcheck does not exit 2 on a
+          # missing path (pre-existing failure also on hosted runners).
+          shellcheck -e "${DISABLE_CODES}" -x scripts/*.sh rootfs/etc/profile.d/*.sh rootfs/usr/local/bin/npx rootfs/usr/local/bin/yarn
 
       - name: Lint GitHub Workflows (actionlint)
         run: |
