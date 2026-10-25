@@ -1,4 +1,0 @@
-self-hosted-runner:
-  # GALADRIEL self-hosted runners (org biel-homelab)
-  labels:
-    - galadriel
