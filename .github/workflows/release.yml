@@ -21,7 +21,7 @@ permissions:
 jobs:
   author-release:
     name: Author Release & Tag
-    runs-on: [self-hosted, Linux, X64, galadriel]
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
